@@ -4,6 +4,8 @@ import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { FiHome, FiUsers, FiPieChart, FiSettings, FiLogOut, FiPlus, FiBell, FiLogIn, FiSun, FiMoon } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
+import logoDark from '../assets/logo-dark.png';
+import logoLight from '../assets/logo-light.png';
 
 const Layout = () => {
     const { guests } = useData();
@@ -62,7 +64,12 @@ const Layout = () => {
                 style={{ width: '280px', height: 'calc(100vh - 32px)', position: 'sticky', top: '16px', zIndex: 1000 }}
             >
                 <div className="d-flex justify-content-between align-items-center mb-4">
-                    <a href="/" className="text-decoration-none">
+                    <a href="/" className="text-decoration-none d-flex align-items-center gap-2">
+                        <img
+                            src={theme === 'light' ? logoDark : logoLight}
+                            alt="Islatel Logo"
+                            style={{ height: '40px', objectFit: 'contain' }}
+                        />
                         <span className="fs-4 fw-bold text-gradient">ISLATEL CRM</span>
                     </a>
                     <Button

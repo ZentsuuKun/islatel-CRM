@@ -438,105 +438,181 @@ const Guests = () => {
             </Modal>
 
             {/* Add/Edit Modal */}
-            <Modal show={showModal} onHide={handleClose} centered contentClassName="border-0 shadow-lg">
+            <Modal show={showModal} onHide={handleClose} centered dialogClassName="glass-modal" size="lg">
                 <Modal.Header closeButton className="border-bottom border-light">
-                    <Modal.Title>{editingId ? 'Edit Guest' : 'Add New Guest'}</Modal.Title>
+                    <Modal.Title className="fw-bold font-luxury text-gradient">{editingId ? 'Edit Guest' : 'New Guest Booking'}</Modal.Title>
                 </Modal.Header>
-                <Modal.Body>
+                <Modal.Body className="p-4">
                     <Form onSubmit={handleSubmit}>
                         <fieldset disabled={formLocked}>
-                            <Row className="g-3">
-                                <Col md={12}>
-                                    <Form.Group>
-                                        <Form.Label>Guest Name *</Form.Label>
-                                        <Form.Control required name="name" value={formData.name} onChange={handleChange} className="filter-control w-100" />
-                                    </Form.Group>
-                                </Col>
-                                <Col md={6}>
-                                    <Form.Group>
-                                        <Form.Label>Email</Form.Label>
-                                        <Form.Control type="email" name="email" value={formData.email} onChange={handleChange} className="filter-control w-100" />
-                                    </Form.Group>
-                                </Col>
-                                <Col md={6}>
-                                    <Form.Group>
-                                        <Form.Label>Phone</Form.Label>
-                                        <Form.Control name="phone" value={formData.phone} onChange={handleChange} className="filter-control w-100" />
-                                    </Form.Group>
-                                </Col>
-                                <Col md={12}>
-                                    <Form.Group>
-                                        <Form.Label>Facebook Name</Form.Label>
-                                        <Form.Control name="fbName" value={formData.fbName} onChange={handleChange} className="filter-control w-100" />
-                                    </Form.Group>
-                                </Col>
-                                <Col md={6}>
-                                    <Form.Group>
-                                        <Form.Label>Check-in Date *</Form.Label>
-                                        <Form.Control type="date" required name="checkIn" value={formData.checkIn} onChange={handleChange} className="filter-control w-100" />
-                                    </Form.Group>
-                                </Col>
-                                <Col md={6}>
-                                    <Form.Group>
-                                        <Form.Label>Check-out Date *</Form.Label>
-                                        <Form.Control type="date" required name="checkOut" value={formData.checkOut} onChange={handleChange} className="filter-control w-100" />
-                                    </Form.Group>
-                                </Col>
-                                <Col md={6}>
-                                    <Form.Group>
-                                        <Form.Label>Product *</Form.Label>
-                                        <Form.Select required name="product" value={formData.product} onChange={handleChange} className="filter-control w-100">
-                                            <option value="">Select...</option>
-                                            {products.map(p => <option key={p} value={p}>{p}</option>)}
-                                        </Form.Select>
-                                    </Form.Group>
-                                </Col>
-                                <Col md={6}>
-                                    <Form.Group>
-                                        <Form.Label>Sales Channel *</Form.Label>
-                                        <Form.Select required name="channel" value={formData.channel} onChange={handleChange} className="filter-control w-100">
-                                            <option value="">Select...</option>
-                                            {channels.map(c => <option key={c} value={c}>{c}</option>)}
-                                        </Form.Select>
-                                    </Form.Group>
-                                </Col>
-                                <Col md={6}>
-                                    <Form.Group>
-                                        <Form.Label>Staff Member *</Form.Label>
-                                        <Form.Select required name="staff" value={formData.staff} onChange={handleChange} className="filter-control w-100">
-                                            <option value="">Select...</option>
-                                            {staffMembers.map(s => <option key={s} value={s}>{s}</option>)}
-                                        </Form.Select>
-                                    </Form.Group>
-                                </Col>
-                                <Col md={6}>
-                                    <Form.Group>
-                                        <Form.Label>Status *</Form.Label>
-                                        <Form.Select required name="status" value={formData.status} onChange={handleChange} className="filter-control w-100">
-                                            <option value="">Select...</option>
-                                            {statuses.map(s => <option key={s} value={s}>{s}</option>)}
-                                        </Form.Select>
-                                    </Form.Group>
-                                </Col>
-                                {formData.status === 'Booked' && (
+                            <div className="mb-4">
+                                <h6 className="text-secondary text-uppercase mb-3 small fw-bold">Guest Information</h6>
+                                <Row className="g-3">
                                     <Col md={12}>
+                                        <div className="glass-input-group">
+                                            <InputGroup>
+                                                <InputGroup.Text><FiUsers size={18} /></InputGroup.Text>
+                                                <Form.Control
+                                                    required
+                                                    name="name"
+                                                    value={formData.name}
+                                                    onChange={handleChange}
+                                                    placeholder="Guest Full Name *"
+                                                    className="shadow-none"
+                                                />
+                                            </InputGroup>
+                                        </div>
+                                    </Col>
+                                    <Col md={6}>
+                                        <div className="glass-input-group">
+                                            <InputGroup>
+                                                <InputGroup.Text>@</InputGroup.Text>
+                                                <Form.Control
+                                                    type="email"
+                                                    name="email"
+                                                    value={formData.email}
+                                                    onChange={handleChange}
+                                                    placeholder="Email Address"
+                                                    className="shadow-none"
+                                                />
+                                            </InputGroup>
+                                        </div>
+                                    </Col>
+                                    <Col md={6}>
+                                        <div className="glass-input-group">
+                                            <InputGroup>
+                                                <InputGroup.Text>#</InputGroup.Text>
+                                                <Form.Control
+                                                    name="phone"
+                                                    value={formData.phone}
+                                                    onChange={handleChange}
+                                                    placeholder="Phone Number"
+                                                    className="shadow-none"
+                                                />
+                                            </InputGroup>
+                                        </div>
+                                    </Col>
+                                    <Col md={12}>
+                                        <div className="glass-input-group">
+                                            <InputGroup>
+                                                <InputGroup.Text>fb</InputGroup.Text>
+                                                <Form.Control
+                                                    name="fbName"
+                                                    value={formData.fbName}
+                                                    onChange={handleChange}
+                                                    placeholder="Facebook Name"
+                                                    className="shadow-none"
+                                                />
+                                            </InputGroup>
+                                        </div>
+                                    </Col>
+                                </Row>
+                            </div>
+
+                            <div className="mb-4">
+                                <h6 className="text-secondary text-uppercase mb-3 small fw-bold">Booking Details</h6>
+                                <Row className="g-3">
+                                    <Col md={6}>
+                                        <Form.Label className="small text-muted mb-1">Check-in Date *</Form.Label>
+                                        <Form.Control
+                                            type="date"
+                                            required
+                                            name="checkIn"
+                                            value={formData.checkIn}
+                                            onChange={handleChange}
+                                            className="filter-control w-100"
+                                        />
+                                    </Col>
+                                    <Col md={6}>
+                                        <Form.Label className="small text-muted mb-1">Check-out Date *</Form.Label>
+                                        <Form.Control
+                                            type="date"
+                                            required
+                                            name="checkOut"
+                                            value={formData.checkOut}
+                                            onChange={handleChange}
+                                            className="filter-control w-100"
+                                        />
+                                    </Col>
+                                    <Col md={6}>
                                         <Form.Group>
-                                            <Form.Label>Booked Value</Form.Label>
-                                            <Form.Control type="number" name="bookedValue" value={formData.bookedValue} onChange={handleChange} className="filter-control w-100" />
+                                            <Form.Label className="small text-muted mb-1">Product *</Form.Label>
+                                            <Form.Select required name="product" value={formData.product} onChange={handleChange} className="filter-control w-100">
+                                                <option value="">Select Product...</option>
+                                                {products.map(p => <option key={p} value={p}>{p}</option>)}
+                                            </Form.Select>
                                         </Form.Group>
                                     </Col>
-                                )}
-                                <Col md={12}>
-                                    <Form.Group>
-                                        <Form.Label>Notes</Form.Label>
-                                        <Form.Control as="textarea" rows={3} name="notes" value={formData.notes} onChange={handleChange} className="filter-control w-100" />
-                                    </Form.Group>
-                                </Col>
-                            </Row>
+                                    <Col md={6}>
+                                        <Form.Group>
+                                            <Form.Label className="small text-muted mb-1">Sales Channel *</Form.Label>
+                                            <Form.Select required name="channel" value={formData.channel} onChange={handleChange} className="filter-control w-100">
+                                                <option value="">Select Channel...</option>
+                                                {channels.map(c => <option key={c} value={c}>{c}</option>)}
+                                            </Form.Select>
+                                        </Form.Group>
+                                    </Col>
+                                </Row>
+                            </div>
+
+                            <div className="mb-4">
+                                <h6 className="text-secondary text-uppercase mb-3 small fw-bold">Internal Use</h6>
+                                <Row className="g-3">
+                                    <Col md={6}>
+                                        <Form.Group>
+                                            <Form.Label className="small text-muted mb-1">Staff Member *</Form.Label>
+                                            <Form.Select required name="staff" value={formData.staff} onChange={handleChange} className="filter-control w-100">
+                                                <option value="">Select Staff...</option>
+                                                {staffMembers.map(s => <option key={s} value={s}>{s}</option>)}
+                                            </Form.Select>
+                                        </Form.Group>
+                                    </Col>
+                                    <Col md={6}>
+                                        <Form.Group>
+                                            <Form.Label className="small text-muted mb-1">Status *</Form.Label>
+                                            <Form.Select required name="status" value={formData.status} onChange={handleChange} className="filter-control w-100">
+                                                <option value="">Select Status...</option>
+                                                {statuses.map(s => <option key={s} value={s}>{s}</option>)}
+                                            </Form.Select>
+                                        </Form.Group>
+                                    </Col>
+                                    {formData.status === 'Booked' && (
+                                        <Col md={12} className="animate-fade-in">
+                                            <Form.Group className="p-3 rounded border border-warning bg-warning bg-opacity-10">
+                                                <Form.Label className="text-warning fw-bold mb-1">Total Booked Value (₱)</Form.Label>
+                                                <Form.Control
+                                                    type="number"
+                                                    name="bookedValue"
+                                                    value={formData.bookedValue}
+                                                    onChange={handleChange}
+                                                    className="filter-control w-100 border-warning fw-bold"
+                                                    placeholder="0.00"
+                                                />
+                                            </Form.Group>
+                                        </Col>
+                                    )}
+                                    <Col md={12}>
+                                        <Form.Group>
+                                            <Form.Label className="small text-muted mb-1">Notes</Form.Label>
+                                            <Form.Control
+                                                as="textarea"
+                                                rows={3}
+                                                name="notes"
+                                                value={formData.notes}
+                                                onChange={handleChange}
+                                                className="filter-control w-100"
+                                                placeholder="Additional notes about the guest..."
+                                            />
+                                        </Form.Group>
+                                    </Col>
+                                </Row>
+                            </div>
                         </fieldset>
-                        <div className="d-flex justify-content-end gap-2 mt-4">
-                            <Button variant="secondary" onClick={handleClose}>Cancel</Button>
-                            <Button variant="primary" type="submit" disabled={formLocked}>{editingId ? 'Update Guest' : 'Add Guest'}</Button>
+                        <div className="d-flex justify-content-end gap-3 mt-4 pt-3 border-top border-light">
+                            <Button variant="outline-secondary" onClick={handleClose} className="px-4">Cancel</Button>
+                            <Button variant="primary" type="submit" disabled={formLocked} className="px-5 shadow-sm">
+                                {editingId ? 'Global Update' : 'Create Booking'}
+                            </Button>
                         </div>
                     </Form>
                 </Modal.Body>

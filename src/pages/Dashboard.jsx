@@ -60,14 +60,14 @@ const ForecastCard = ({ title, label, leads, booked, revenue, rate, color, emoji
                 <div className="mt-auto">
                     <Row className="g-2 mb-3">
                         <Col xs={6}>
-                            <div className="p-2 rounded-3 bg-opacity-10" style={{ backgroundColor: 'rgba(0,0,0,0.02)', border: '1px solid rgba(0,0,0,0.05)' }}>
-                                <div className="mb-0 fw-bold h6">{booked}</div>
+                            <div className="p-2 rounded-3" style={{ backgroundColor: 'var(--table-header-bg)', border: '1px solid var(--border-color)' }}>
+                                <div className="mb-0 fw-bold h6 text-primary">{booked}</div>
                                 <div className="text-secondary tiny" style={{ fontSize: '0.65rem' }}>Booked</div>
                             </div>
                         </Col>
                         <Col xs={6}>
-                            <div className="p-2 rounded-3 bg-opacity-10" style={{ backgroundColor: 'rgba(0,0,0,0.02)', border: '1px solid rgba(0,0,0,0.05)' }}>
-                                <div className="mb-0 fw-bold h6">{leads}</div>
+                            <div className="p-2 rounded-3" style={{ backgroundColor: 'var(--table-header-bg)', border: '1px solid var(--border-color)' }}>
+                                <div className="mb-0 fw-bold h6 text-primary">{leads}</div>
                                 <div className="text-secondary tiny" style={{ fontSize: '0.65rem' }}>Leads</div>
                             </div>
                         </Col>
@@ -76,7 +76,7 @@ const ForecastCard = ({ title, label, leads, booked, revenue, rate, color, emoji
                     <div>
                         <div className="d-flex justify-content-between align-items-end mb-1">
                             <div>
-                                <div className="fw-bold text-dark">₱{revenue.toLocaleString()}</div>
+                                <div className="fw-bold fs-5 text-primary">₱{revenue.toLocaleString()}</div>
                                 <div className="text-secondary tiny" style={{ fontSize: '0.65rem' }}>Revenue</div>
                             </div>
                             <span className={`tiny fw-bold ${textVariant}`}>{Math.min(rate, 100)}%</span>
@@ -103,7 +103,6 @@ const Dashboard = () => {
         const yesterdayDate = new Date();
         yesterdayDate.setDate(yesterdayDate.getDate() - 1);
         const yesterdayStr = yesterdayDate.toISOString().split('T')[0];
-
         const getRevenueDate = (g) => (g.bookedAt || g.sentRateAt || g.createdAt || '').split('T')[0];
         const getCreationDate = (g) => (g.createdAt || '').split('T')[0];
 
@@ -328,7 +327,7 @@ const Dashboard = () => {
                 <div className="mt-3 p-3 rounded-3 d-flex align-items-start gap-2 bg-warning bg-opacity-10 border border-warning border-opacity-25">
                     <FiActivity className="text-warning mt-1" size={16} />
                     <p className="small text-secondary mb-0" style={{ lineHeight: '1.5', fontSize: '0.8rem' }}>
-                        <span className="fw-bold text-dark">Note:</span> Closing rates are based on <span className="fw-bold text-dark">check-in dates</span> to forecast future conversion performance.
+                        <span className="fw-bold">Note:</span> Closing rates are based on <span className="fw-bold">check-in dates</span> to forecast future conversion performance.
                     </p>
                 </div>
             </div>
@@ -350,13 +349,13 @@ const Dashboard = () => {
                                                     <FiAward size={24} style={{ color: '#d4af37' }} />
                                                 </div>
                                                 <div className="flex-grow-1">
-                                                    <h6 className="text-secondary text-uppercase mb-1 d-flex align-items-center gap-2" style={{ fontSize: '0.7rem', fontWeight: '700', letterSpacing: '0.5px' }}>
+                                                    <h6 className="text-secondary text-uppercase mb-0 d-flex align-items-center gap-2" style={{ fontSize: '0.7rem', fontWeight: '700', letterSpacing: '0.5px' }}>
                                                         <span style={{ fontSize: '0.9rem', lineHeight: '1' }}>₱</span> Top Revenue
                                                     </h6>
                                                     <div className="d-flex justify-content-between align-items-end">
-                                                        <h4 className="fw-bold mb-0">{stats.topPerformer.name}</h4>
+                                                        <h4 className="fw-bold mb-0 text-gradient">{stats.topPerformer.name}</h4>
                                                         <div className="text-end">
-                                                            <div className="text-gold fw-bold" style={{ fontSize: '1.2rem' }}>₱{Number(stats.topPerformer.revenue).toLocaleString()}</div>
+                                                            <div className="text-warning text-gradient fw-bold" style={{ fontSize: '1.2rem' }}>₱{Number(stats.topPerformer.revenue).toLocaleString()}</div>
                                                             <small className="text-secondary opacity-75">{stats.topPerformer.booked} Bookings</small>
                                                         </div>
                                                     </div>
@@ -369,11 +368,11 @@ const Dashboard = () => {
                                                     <FiUsers size={24} className="text-primary" />
                                                 </div>
                                                 <div className="flex-grow-1">
-                                                    <h6 className="text-secondary text-uppercase mb-1 d-flex align-items-center gap-2" style={{ fontSize: '0.7rem', fontWeight: '700', letterSpacing: '0.5px' }}>
+                                                    <h6 className="text-secondary text-uppercase mb-0 d-flex align-items-center gap-2" style={{ fontSize: '0.7rem', fontWeight: '700', letterSpacing: '0.5px' }}>
                                                         <FiUsers size={12} style={{ marginTop: '-1px' }} /> Top Lead Getter
                                                     </h6>
                                                     <div className="d-flex justify-content-between align-items-end">
-                                                        <h4 className="fw-bold mb-0">{stats.topLeadGetter.name}</h4>
+                                                        <h4 className="fw-bold mb-0 text-gradient">{stats.topLeadGetter.name}</h4>
                                                         <div className="text-end">
                                                             <div className="text-primary fw-bold" style={{ fontSize: '1.2rem' }}>{stats.topLeadGetter.leads} Leads</div>
                                                             <small className="text-secondary opacity-75">Active discovery</small>
@@ -388,11 +387,11 @@ const Dashboard = () => {
                                                     <FiTrendingUp size={24} style={{ color: '#0dcaf0' }} />
                                                 </div>
                                                 <div className="flex-grow-1">
-                                                    <h6 className="text-secondary text-uppercase mb-1 d-flex align-items-center gap-2" style={{ fontSize: '0.7rem', fontWeight: '700', letterSpacing: '0.5px' }}>
+                                                    <h6 className="text-secondary text-uppercase mb-0 d-flex align-items-center gap-2" style={{ fontSize: '0.7rem', fontWeight: '700', letterSpacing: '0.5px' }}>
                                                         <FiTrendingUp size={12} style={{ marginTop: '-1px' }} /> Best Closer
                                                     </h6>
                                                     <div className="d-flex justify-content-between align-items-end">
-                                                        <h4 className="fw-bold mb-0">{stats.bestCloser.name}</h4>
+                                                        <h4 className="fw-bold mb-0 text-gradient">{stats.bestCloser.name}</h4>
                                                         <div className="text-end">
                                                             <div className="text-info fw-bold" style={{ fontSize: '1.2rem' }}>{stats.bestCloser.rate}% Rate</div>
                                                             <small className="text-secondary opacity-75">{stats.bestCloser.closed} Closed</small>
