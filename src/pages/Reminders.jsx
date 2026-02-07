@@ -202,7 +202,7 @@ const Reminders = () => {
                     </Card>
                 ))}
 
-                <Modal show={toastData.show} onHide={() => setToastData({ show: false, guest: null })} centered size="lg" contentClassName="border-0 shadow-lg">
+                <Modal show={toastData.show} onHide={() => setToastData({ show: false, guest: null })} centered size="lg" className="glass-modal" contentClassName="border-0 shadow-lg">
                     <Modal.Header closeButton className="border-bottom border-light">
                         <Modal.Title>Guest Details</Modal.Title>
                     </Modal.Header>
@@ -324,7 +324,7 @@ const Reminders = () => {
                 </Modal>
 
                 {/* Follow-up Form Modal */}
-                <Modal show={followUpModal.show} onHide={() => setFollowUpModal({ show: false, guest: null })} centered size="lg" contentClassName="border-0 shadow-lg">
+                <Modal show={followUpModal.show} onHide={() => setFollowUpModal({ show: false, guest: null })} centered size="lg" className="glass-modal" contentClassName="border-0 shadow-lg">
                     <Modal.Header closeButton className="border-bottom border-light">
                         <Modal.Title>Complete Follow-up #{followUpModal.guest ? getFollowUpCount(followUpModal.guest.id || followUpModal.guest.email || '') + 1 : 1}</Modal.Title>
                     </Modal.Header>

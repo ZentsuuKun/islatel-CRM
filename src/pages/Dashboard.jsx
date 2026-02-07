@@ -1,8 +1,11 @@
 import React, { useMemo, useState } from 'react';
 import { Row, Col, Card, Table, ProgressBar, Form, Button, Toast, ToastContainer } from 'react-bootstrap';
-import { FiTrendingUp, FiUsers, FiDollarSign, FiActivity, FiTarget, FiAward, FiCalendar, FiPlus, FiSave, FiTag, FiPhone } from 'react-icons/fi';
+import { FiTrendingUp, FiUsers, FiDollarSign, FiActivity, FiTarget, FiAward, FiCalendar, FiPlus, FiSave, FiTag, FiPhone, FiPieChart } from 'react-icons/fi';
 import { useData } from '../context/DataContext';
+import { useAuth } from '../context/AuthContext';
+import ErrorBoundary from '../components/ErrorBoundary';
 import DatabaseStatus from '../components/DatabaseStatus';
+import Reports from './Reports';
 
 const StatCard = ({ title, value, subtext, icon: Icon, color }) => (
     <Card className="glass-card mb-4 border-0 h-100">
@@ -95,6 +98,7 @@ const ForecastCard = ({ title, label, leads, booked, revenue, rate, color, emoji
 };
 
 const Dashboard = () => {
+    const { user } = useAuth();
     const { guests, products, channels, staffMembers, statuses } = useData();
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
 
@@ -146,9 +150,9 @@ const Dashboard = () => {
         // Staff Performance (Month)
         const staffStats = {};
 
-        // Use all leads for calculation
+        // Use all leads for calculation (General Leads)
         thisMonthLeads.forEach(g => {
-            if (!staffStats[g.staff]) staffStats[g.staff] = { revenue: 0, booked: 0, leads: 0 };
+            if (!staffStats[g.staff]) staffStats[g.staff] = { revenue: 0, booked: 0, leads: 0, weightedBooked: 0 };
             staffStats[g.staff].leads++;
         });
 
@@ -161,8 +165,20 @@ const Dashboard = () => {
             // Use creditedData for revenue/bookings, fallback to original staff
             const closer = g.creditedStaff || g.staff;
 
-            if (!staffStats[closer]) staffStats[closer] = { revenue: 0, booked: 0, leads: 0 };
-            if (g.status === 'Booked') staffStats[closer].booked++;
+            if (!staffStats[closer]) staffStats[closer] = { revenue: 0, booked: 0, leads: 0, weightedBooked: 0 };
+
+            if (g.status === 'Booked') {
+                staffStats[closer].booked++;
+
+                // Check if this is an "Invisible Lead" (Follow-up lead from previous months)
+                const createdDate = new Date(g.createdAt);
+                const isNewLead = createdDate.getMonth() === currentMonth && createdDate.getFullYear() === currentYear;
+
+                // If new lead, count as 1. If invisible/follow-up lead, count as 0.1
+                const weight = isNewLead ? 1 : 0.1;
+                staffStats[closer].weightedBooked += weight;
+            }
+
             staffStats[closer].revenue += Number(g.bookedValue || 0);
         });
 
@@ -171,7 +187,8 @@ const Dashboard = () => {
         let topLeadGetter = { name: 'N/A', leads: 0 };
 
         Object.entries(staffStats).forEach(([name, data]) => {
-            const rate = data.leads > 0 ? (data.booked / data.leads) * 100 : 0;
+            // Rate uses weightedBooked (where follow-ups count as 0.1)
+            const rate = data.leads > 0 ? (data.weightedBooked / data.leads) * 100 : 0;
 
             if (data.revenue > topPerformer.revenue) {
                 topPerformer = { name, ...data, rate: rate.toFixed(1) };
@@ -291,7 +308,6 @@ const Dashboard = () => {
                         color="success"
                     />
                 </Col>
-                {/* Removed simple Closing Rate card to replace with detailed section below */}
                 <Col md={4} className="animate-slide-up delay-400">
                     <StatCard
                         title="Bookings Today"
@@ -430,11 +446,11 @@ const Dashboard = () => {
                                                 <tr key={name} className="border-bottom border-light border-opacity-50">
                                                     <td className="ps-4 fw-medium">{name}</td>
                                                     <td className="text-light opacity-75">{data.leads}</td>
-                                                    <td className="text-light opacity-75">{data.booked}</td>
+                                                    <td className="text-light opacity-75">{Number(data.weightedBooked || 0).toFixed(1).replace('.0', '')}</td>
                                                     <td>
                                                         <div className="d-flex align-items-center gap-2">
-                                                            <span className="small fw-bold">{(data.leads > 0 ? (data.booked / data.leads * 100) : 0).toFixed(0)}%</span>
-                                                            <ProgressBar now={(data.leads > 0 ? (data.booked / data.leads * 100) : 0)} variant="warning" style={{ height: '4px', width: '50px', backgroundColor: 'rgba(255,255,255,0.1)' }} />
+                                                            <span className="small fw-bold">{(data.leads > 0 ? (data.weightedBooked / data.leads * 100) : 0).toFixed(1)}%</span>
+                                                            <ProgressBar now={(data.leads > 0 ? (data.weightedBooked / data.leads * 100) : 0)} variant="warning" style={{ height: '4px', width: '50px', backgroundColor: 'rgba(255,255,255,0.1)' }} />
                                                         </div>
                                                     </td>
                                                     <td className="text-end pe-4 text-gold fw-bold">₱{data.revenue.toLocaleString()}</td>
@@ -451,6 +467,20 @@ const Dashboard = () => {
                     </Row>
                 </Col>
             </Row>
+
+            {/* Detailed Reports Section - Admin Only */}
+            {user && user.role === 'admin' && (
+                <div className="mt-5 mb-4 animate-slide-up delay-600">
+                    <hr className="border-secondary opacity-25 mb-5" />
+                    <div className="d-flex align-items-center gap-2 mb-4">
+                        <FiPieChart className="text-warning" size={24} />
+                        <h2 className="fw-bold mb-0">Detailed Reports</h2>
+                    </div>
+                    <ErrorBoundary>
+                        <Reports />
+                    </ErrorBoundary>
+                </div>
+            )}
         </div>
     );
 };

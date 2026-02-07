@@ -35,6 +35,7 @@
   --input-border: #4d4335;
   --table-header-bg: rgba(212, 175, 55, 0.1);
   --shadow-color: rgba(0, 0, 0, 0.3);
+  --btn-close-filter: invert(1) grayscale(100%) brightness(200%);
 }
 
 body {
@@ -641,12 +642,42 @@ body {
 }
 
 /* Modal styling */
+/* Modal styling with Theme Support */
 .glass-modal .modal-content {
-  background: var(--bg-card);
+  background: var(--bg-card) !important;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-primary) !important;
+  box-shadow: 0 10px 30px var(--shadow-color) !important;
+}
+
+/* Inputs inside Glass Modal adapting to theme */
+.glass-modal .form-control,
+.glass-modal .form-select,
+.glass-modal .filter-control {
+  background-color: var(--input-bg) !important;
+  border: 1px solid var(--input-border) !important;
+  color: var(--text-primary) !important;
+}
+
+.glass-modal .form-control:focus,
+.glass-modal .form-select:focus,
+.glass-modal .filter-control:focus {
+  background-color: var(--input-bg) !important;
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.1) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Fix Close Button visibility based on theme */
+.glass-modal .btn-close {
+  filter: var(--btn-close-filter, none) !important;
+  opacity: 0.5;
+}
+
+.glass-modal .btn-close:hover {
+  opacity: 1;
 }
 
 .modal-header {
@@ -692,5 +723,89 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .d-flex.flex-md-row {
+    flex-direction: column !important;
+  }
+
+  /* Sidebar Mobile - Hidden by default, toggled via JS/State if we add a toggle */
+  /* For now, we will make it a top navbar or stack */
+  .sidebar-dark {
+    width: 100% !important;
+    height: auto !important;
+    position: relative !important;
+    top: 0 !important;
+    margin: 0 !important;
+    border-radius: 0 !important;
+    padding: 1rem !important;
+    z-index: 1050;
+    margin-bottom: 1rem !important;
+  }
+
+  /* Main content adjustments */
+  .flex-grow-1 {
+    padding: 1rem !important;
+    height: auto !important;
+    overflow-y: visible !important;
+  }
+
+  /* Stacking columns */
+  .row {
+    margin-right: 0 !important;
+    margin-left: 0 !important;
+  }
+
+  .col-md-3,
+  .col-md-4,
+  .col-md-6 {
+    width: 100% !important;
+    margin-bottom: 1rem;
+  }
+
+  /* Adjust filter bars */
+  .filter-bar .row>div {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+
+  /* Adjust tables */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Adjust cards */
+  .glass-card {
+    margin-bottom: 1rem;
+  }
+
+  /* Adjust fonts for mobile */
+  h1,
+  .h1 {
+    font-size: 1.5rem !important;
+  }
+
+  h2,
+  .h2 {
+    font-size: 1.25rem !important;
+  }
+
+  h4,
+  .h4 {
+    font-size: 1.1rem !important;
+  }
+
+  /* Hide sidebar nav items that are not crucial or collapse them */
+  .sidebar-dark hr {
+    margin: 0.5rem 0;
+  }
+
+  /* Ensure modal is responsive */
+  .modal-dialog {
+    margin: 0.5rem;
   }
 }

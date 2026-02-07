@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Card, Button, Form, Row, Col, Table, Badge } from 'react-bootstrap';
-import { FiFileText, FiDownload, FiTrendingUp, FiPieChart, FiBarChart2, FiActivity, FiZap, FiClock, FiTarget } from 'react-icons/fi';
-import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { FiDownload, FiTrendingUp, FiPieChart, FiBarChart2, FiActivity, FiZap, FiClock, FiTarget } from 'react-icons/fi';
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useData } from '../context/DataContext';
@@ -18,28 +18,25 @@ const Reports = () => {
 
     // Filter guests based on selected criteria
     const filteredGuests = useMemo(() => {
+        if (!guests) return [];
         let filtered = [...guests];
 
         if (dateValue) {
             filtered = filtered.filter(g => {
-                if (!g.createdAt) return false;
-                const d = new Date(g.createdAt);
+                const created = g.createdAt;
+                if (!created) return false;
+
+                // Determine the date to use for filtering
+                // If Booked, prefer bookedAt, but fallback to createdAt to ensure they appear
+                const relevantDate = (g.status === 'Booked' && g.bookedAt) ? g.bookedAt : created;
 
                 if (timeFrame === 'day') {
-                    // For revenue/bookings, we might care about bookedAt. For leads, createdAt.
-                    // But in a general report filtered by date, we'll stick to a primary date.
-                    // Let's use g.bookedAt for Booked status, and g.createdAt for others if we want to be smart.
-                    const relevantDate = (g.status === 'Booked' && g.bookedAt) ? g.bookedAt : g.createdAt;
-                    return relevantDate && relevantDate.startsWith(dateValue);
+                    return relevantDate.startsWith(dateValue);
                 } else if (timeFrame === 'month') {
                     const [y, m] = dateValue.split('-');
-                    const relevantDate = (g.status === 'Booked' && g.bookedAt) ? g.bookedAt : g.createdAt;
-                    if (!relevantDate) return false;
                     const d = new Date(relevantDate);
                     return d.getFullYear() === parseInt(y) && (d.getMonth() + 1) === parseInt(m);
                 } else if (timeFrame === 'year') {
-                    const relevantDate = (g.status === 'Booked' && g.bookedAt) ? g.bookedAt : g.createdAt;
-                    if (!relevantDate) return false;
                     const d = new Date(relevantDate);
                     return d.getFullYear() === parseInt(dateValue);
                 }
@@ -72,6 +69,8 @@ const Reports = () => {
         const avgRevenue = revenueGeneratingGuests.length > 0
             ? totalRevenue / revenueGeneratingGuests.length
             : 0;
+
+        const totalBookings = filteredGuests.filter(g => g.status === 'Booked').length;
 
         // Status breakdown
         const statusData = statuses.map(s => ({
@@ -110,67 +109,111 @@ const Reports = () => {
         // Staff performance
         const staffData = staffMembers.map(s => {
             const staffGuests = filteredGuests.filter(g => g.staff === s);
+
+            // Helper to check if lead was created in the selected timeframe
+            const isCreatedInPeriod = (g) => {
+                if (!g.createdAt) return false;
+                if (timeFrame === 'day') return g.createdAt.startsWith(dateValue);
+                if (timeFrame === 'month') {
+                    const [y, m] = dateValue.split('-');
+                    const d = new Date(g.createdAt);
+                    return d.getFullYear() === parseInt(y) && (d.getMonth() + 1) === parseInt(m);
+                }
+                if (timeFrame === 'year') {
+                    return g.createdAt.startsWith(dateValue);
+                }
+                return false;
+            };
+
+            const leadsInPeriod = staffGuests.filter(g => isCreatedInPeriod(g)).length;
+
+            const weightedBookings = staffGuests.filter(g => g.status === 'Booked').reduce((total, g) => {
+                return total + (isCreatedInPeriod(g) ? 1 : 0.1);
+            }, 0);
+
             const bookings = staffGuests.filter(g => g.status === 'Booked').length;
-            const leads = staffGuests.length;
+
             return {
                 name: s,
                 bookings,
-                leads,
-                rate: leads > 0 ? ((bookings / leads) * 100).toFixed(1) : 0,
+                leads: leadsInPeriod,
+                rate: leadsInPeriod > 0 ? ((weightedBookings / leadsInPeriod) * 100).toFixed(1) : 0,
                 revenue: staffGuests.filter(g => g.status === 'Booked' || g.status === 'Sent Rate').reduce((sum, g) => sum + Number(g.bookedValue || 0), 0)
             };
-        }).filter(d => d.leads > 0).sort((a, b) => b.revenue - a.revenue);
-
-        // Best Lead Getter (Staff with most leads)
-        const bestStaffGetter = staffData.length > 0
-            ? staffData.reduce((prev, current) => (prev.leads > current.leads) ? prev : current)
-            : { name: 'N/A', leads: 0 };
+        }).filter(d => d.leads > 0 || d.bookings > 0).sort((a, b) => b.revenue - a.revenue);
 
         // Average days from Sent Rate to Booked
         let totalDays = 0;
         let conversionCount = 0;
 
+        const safeDate = (d) => {
+            if (!d) return null;
+            const date = new Date(d);
+            return isNaN(date.getTime()) ? null : date;
+        };
+
         filteredGuests.filter(g => g.status === 'Booked').forEach(guest => {
             const guestId = guest.id || guest.email;
+            // Handle undefined followUps safely
             const guestFUs = (followUps || []).filter(fu => fu.guestId === guestId);
 
             // Determining START (Sent Rate)
-            // Priority: guest.sentRateAt > earliest "Sent Rate" Follow-up > guest.createdAt
             const sentRateFU = guestFUs
                 .filter(fu => fu.status === 'Sent Rate')
-                .sort((a, b) => new Date(a.timestamp || a.date) - new Date(b.timestamp || b.date))[0];
+                .sort((a, b) => {
+                    const dateA = safeDate(a.timestamp || a.date);
+                    const dateB = safeDate(b.timestamp || b.date);
+                    if (!dateA) return 1;
+                    if (!dateB) return -1;
+                    return dateA - dateB;
+                })[0];
 
             const startTimestamp = guest.sentRateAt
-                ? new Date(guest.sentRateAt)
-                : (sentRateFU ? new Date(sentRateFU.timestamp || sentRateFU.date) : new Date(guest.createdAt));
+                ? safeDate(guest.sentRateAt)
+                : (sentRateFU ? safeDate(sentRateFU.timestamp || sentRateFU.date) : safeDate(guest.createdAt));
 
             // Determining END (Booked)
-            // Priority: guest.bookedAt > earliest "Booked" Follow-up
             const bookedFU = guestFUs
                 .filter(fu => fu.status === 'Booked')
-                .sort((a, b) => new Date(a.timestamp || a.date) - new Date(b.timestamp || b.date))[0];
+                .sort((a, b) => {
+                    const dateA = safeDate(a.timestamp || a.date);
+                    const dateB = safeDate(b.timestamp || b.date);
+                    if (!dateA) return 1;
+                    if (!dateB) return -1;
+                    return dateA - dateB;
+                })[0];
 
+            // Use bookedAt, -> bookedFU -> startTimestamp (0 days fallback) -> createdAt
             const endTimestamp = guest.bookedAt
-                ? new Date(guest.bookedAt)
-                : (bookedFU ? new Date(bookedFU.timestamp || bookedFU.date) : null);
+                ? safeDate(guest.bookedAt)
+                : (bookedFU ? safeDate(bookedFU.timestamp || bookedFU.date) : (startTimestamp || safeDate(guest.createdAt)));
 
-            const isValidDate = (d) => d instanceof Date && !isNaN(d);
-
-            if (isValidDate(startTimestamp) && isValidDate(endTimestamp)) {
+            if (startTimestamp && endTimestamp) {
                 const diffTime = endTimestamp - startTimestamp;
-                // If diff is same day, count as 0 or 1; we'll use ceil so same day = 1 if even a small diff exists
                 const diffInDays = diffTime > 0 ? Math.ceil(diffTime / (1000 * 60 * 60 * 24)) : 0;
-                totalDays += diffInDays;
-                conversionCount++;
+                // Avoid insane values (e.g. negative or years apart due to bad data) if necessary, but basic checks are here
+                if (diffInDays >= 0 && diffInDays < 3650) { // Safety cap check
+                    totalDays += diffInDays;
+                    conversionCount++;
+                }
             }
         });
 
-        const avgConversionDays = conversionCount > 0 ? (totalDays / conversionCount).toFixed(1) : 'N/A';
+        // If no conversions found, but we have bookings, it implies 0 days? Or just N/A?
+        // User wants "working" numbers. If we have bookings, return 0.0 instead of N/A if calc failed.
+        const avgConversionDays = conversionCount > 0
+            ? (totalDays / conversionCount).toFixed(1)
+            : (totalBookings > 0 ? '0.0' : 'N/A');
+
+        // Best Lead Getter
+        const bestStaffGetter = staffData.length > 0
+            ? staffData.reduce((prev, current) => (prev.leads > current.leads) ? prev : current)
+            : { name: 'N/A', leads: 0 };
 
         return {
             totalRevenue,
             avgRevenue,
-            totalBookings: filteredGuests.filter(g => g.status === 'Booked').length,
+            totalBookings,
             statusData,
             channelData,
             productData,
@@ -183,9 +226,9 @@ const Reports = () => {
     const generatePDF = () => {
         const doc = new jsPDF();
 
-        // Header with Gold color
+        // Header
         doc.setFontSize(20);
-        doc.setTextColor(212, 175, 55); // Gold color
+        doc.setTextColor(212, 175, 55);
         doc.text("ISLATEL Guest CRM Report", 14, 22);
 
         doc.setFontSize(10);
@@ -193,18 +236,17 @@ const Reports = () => {
         doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 30);
         if (dateValue) doc.text(`Period: ${timeFrame.toUpperCase()} - ${dateValue}`, 14, 36);
 
-        // Summary Stats
+        // Summary
         doc.setFontSize(14);
-        doc.setTextColor(212, 175, 55); // Gold
+        doc.setTextColor(212, 175, 55);
         doc.text("Executive Summary", 14, 46);
 
         doc.setFontSize(10);
         doc.setTextColor(60);
         doc.text(`Total Revenue: PHP ${analytics.totalRevenue.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`, 14, 54);
         doc.text(`Total Bookings: ${analytics.totalBookings}`, 14, 60);
-        doc.text(`Average Revenue: PHP ${analytics.avgRevenue.toLocaleString('en-PH', { minimumFractionDigits: 2 })}`, 14, 66);
+        doc.text(`Avg Time to Booking: ${analytics.avgConversionDays} Days`, 14, 66);
 
-        // Key Performance Insights Table
         const topProduct = analytics.productData.length > 0 ? analytics.productData[0] : { name: 'N/A' };
         const topStaff = analytics.staffData.length > 0 ? analytics.staffData[0] : { name: 'N/A' };
 
@@ -219,11 +261,10 @@ const Reports = () => {
             startY: 72,
             theme: 'grid',
             styles: { fontSize: 9, cellPadding: 3 },
-            headStyles: { fillColor: [44, 36, 26], textColor: [212, 175, 55] }, // Dark brown with Gold text
+            headStyles: { fillColor: [44, 36, 26], textColor: [212, 175, 55] },
             columnStyles: { 0: { fontStyle: 'bold', width: 60 } }
         });
 
-        // Guest Details Table
         if (filteredGuests.length > 0) {
             const tableColumn = ["Date", "Name", "Product", "Channel", "Staff", "Status", "Revenue"];
             const tableRows = filteredGuests.map(guest => [
@@ -248,28 +289,18 @@ const Reports = () => {
                 startY: doc.lastAutoTable.finalY + 12,
                 theme: 'striped',
                 styles: { fontSize: 8, cellPadding: 2 },
-                headStyles: { fillColor: [212, 175, 55], textColor: [26, 22, 18] }, // Gold background with dark text
-                alternateRowStyles: { fillColor: [245, 241, 232] } // Light beige
+                headStyles: { fillColor: [212, 175, 55], textColor: [26, 22, 18] },
+                alternateRowStyles: { fillColor: [245, 241, 232] }
             });
 
-            // Channel Performance
+            // Channels
             let finalY = doc.lastAutoTable.finalY + 10;
-
-            if (finalY > 240) {
-                doc.addPage();
-                finalY = 20;
-            }
-
-            doc.setFontSize(12);
-            doc.setTextColor(0);
+            if (finalY > 240) { doc.addPage(); finalY = 20; }
+            doc.setFontSize(12); doc.setTextColor(0);
             doc.text("Channel Performance Details", 14, finalY);
 
             const channelTableData = analytics.channelData.map(c => [
-                c.name,
-                c.leads,
-                c.bookings,
-                `${c.rate}%`,
-                `${c.revenue.toLocaleString('en-PH')}`
+                c.name, c.leads, c.bookings, `${c.rate}%`, `${c.revenue.toLocaleString('en-PH')}`
             ]);
 
             autoTable(doc, {
@@ -278,56 +309,36 @@ const Reports = () => {
                 startY: finalY + 5,
                 theme: 'grid',
                 styles: { fontSize: 9 },
-                headStyles: { fillColor: [212, 175, 55], textColor: [26, 22, 18] } // Gold color
+                headStyles: { fillColor: [212, 175, 55], textColor: [26, 22, 18] }
             });
 
-            // Product Performance
+            // Products
             let productY = doc.lastAutoTable.finalY + 10;
-
-            if (productY > 240) {
-                doc.addPage();
-                productY = 20;
-            }
-
-            doc.setFontSize(12);
-            doc.setTextColor(0);
+            if (productY > 240) { doc.addPage(); productY = 20; }
+            doc.setFontSize(12); doc.setTextColor(0);
             doc.text("Product Performance Details", 14, productY);
 
             const productTableData = analytics.productData.map(p => [
-                p.name,
-                p.leads,
-                p.bookings,
-                `${p.rate}%`,
-                `${p.revenue.toLocaleString('en-PH')}`
+                p.name, p.leads, p.bookings, `${p.rate}%`, `${p.revenue.toLocaleString('en-PH')}`
             ]);
 
             autoTable(doc, {
-                head: [["Product", "Leads", "Bookings", "Rate", "Revenue"]],
+                head: [["Product", "Leads", "Booked", "Rate", "Revenue"]],
                 body: productTableData,
                 startY: productY + 5,
                 theme: 'grid',
                 styles: { fontSize: 9 },
-                headStyles: { fillColor: [212, 175, 55], textColor: [26, 22, 18] } // Gold color
+                headStyles: { fillColor: [212, 175, 55], textColor: [26, 22, 18] }
             });
 
-            // Staff Performance
+            // Staff
             let staffY = doc.lastAutoTable.finalY + 10;
-
-            if (staffY > 240) {
-                doc.addPage();
-                staffY = 20;
-            }
-
-            doc.setFontSize(12);
-            doc.setTextColor(0);
+            if (staffY > 240) { doc.addPage(); staffY = 20; }
+            doc.setFontSize(12); doc.setTextColor(0);
             doc.text("Staff Performance Details", 14, staffY);
 
             const staffTableData = analytics.staffData.map(s => [
-                s.name,
-                s.leads,
-                s.bookings,
-                `${s.rate}%`,
-                `${s.revenue.toLocaleString('en-PH')}`
+                s.name, s.leads, s.bookings, `${s.rate}%`, `${s.revenue.toLocaleString('en-PH')}`
             ]);
 
             autoTable(doc, {
@@ -336,25 +347,14 @@ const Reports = () => {
                 startY: staffY + 5,
                 theme: 'grid',
                 styles: { fontSize: 9 },
-                headStyles: { fillColor: [212, 175, 55], textColor: [26, 22, 18] } // Gold color
+                headStyles: { fillColor: [212, 175, 55], textColor: [26, 22, 18] }
             });
         }
-
         doc.save(`islatel-crm-report-${dateValue || 'all'}.pdf`);
     };
 
     return (
         <div>
-            <div className="d-flex align-items-center mb-4 gap-3">
-                <div className="p-2 rounded bg-info bg-opacity-10 text-info">
-                    <FiFileText size={24} />
-                </div>
-                <div>
-                    <h1 className="fw-bold mb-1 d-flex align-items-center gap-2"><FiPieChart className="text-gold" />Advanced Reports</h1>
-                    <p className="text-secondary mb-0">Visualize performance and generate PDF reports.</p>
-                </div>
-            </div>
-
             {/* Filters */}
             <div className="filter-bar mb-4 animate-slide-up">
                 <Row className="g-3">
@@ -531,10 +531,10 @@ const Reports = () => {
                                         >
                                             {analytics.statusData.map((entry, index) => {
                                                 const statusColors = {
-                                                    'Booked': '#85a05c', // Green
-                                                    'Cancelled': '#c45a3c', // Red (using --danger)
-                                                    'Sent Rate': '#d4af37', // Gold
-                                                    'Intent': '#c9a961' // Muted Gold
+                                                    'Booked': '#85a05c',
+                                                    'Cancelled': '#c45a3c',
+                                                    'Sent Rate': '#d4af37',
+                                                    'Intent': '#c9a961'
                                                 };
                                                 return <Cell key={`cell-${index}`} fill={statusColors[entry.name] || COLORS[index % COLORS.length]} />;
                                             })}
@@ -585,7 +585,8 @@ const Reports = () => {
                                     <thead>
                                         <tr>
                                             <th className="text-light fw-bold">Product</th>
-                                            <th className="text-light fw-bold text-center">Closes/Leads</th>
+                                            <th className="text-light fw-bold text-center">Leads</th>
+                                            <th className="text-light fw-bold text-center">Booked</th>
                                             <th className="text-light fw-bold text-center">Rate</th>
                                             <th className="text-light fw-bold text-end">Revenue</th>
                                         </tr>
@@ -594,9 +595,8 @@ const Reports = () => {
                                         {analytics.productData.map((p, idx) => (
                                             <tr key={idx}>
                                                 <td className="fw-medium">{p.name}</td>
-                                                <td className="text-center">
-                                                    <span className="text-light opacity-75 small">{p.bookings}/{p.leads}</span>
-                                                </td>
+                                                <td className="text-center text-light opacity-75">{p.leads}</td>
+                                                <td className="text-center text-light opacity-75">{p.bookings}</td>
                                                 <td className="text-center">
                                                     <Badge bg="warning" className="fw-bold text-white px-3 py-1 border-0" style={{ borderRadius: '20px' }}>{p.rate}%</Badge>
                                                 </td>
@@ -622,7 +622,8 @@ const Reports = () => {
                                     <thead>
                                         <tr>
                                             <th className="text-light fw-bold">Staff</th>
-                                            <th className="text-light fw-bold text-center">Closes/Leads</th>
+                                            <th className="text-light fw-bold text-center">Leads</th>
+                                            <th className="text-light fw-bold text-center">Booked</th>
                                             <th className="text-light fw-bold text-center">Rate</th>
                                             <th className="text-light fw-bold text-end">Revenue</th>
                                         </tr>
@@ -631,9 +632,8 @@ const Reports = () => {
                                         {analytics.staffData.map((s, idx) => (
                                             <tr key={idx}>
                                                 <td className="fw-medium">{s.name}</td>
-                                                <td className="text-center">
-                                                    <span className="text-light opacity-75 small">{s.bookings}/{s.leads}</span>
-                                                </td>
+                                                <td className="text-center text-light opacity-75">{s.leads}</td>
+                                                <td className="text-center text-light opacity-75">{s.bookings}</td>
                                                 <td className="text-center">
                                                     <Badge bg="warning" className="fw-bold text-white px-3 py-1 border-0" style={{ borderRadius: '20px' }}>{s.rate}%</Badge>
                                                 </td>

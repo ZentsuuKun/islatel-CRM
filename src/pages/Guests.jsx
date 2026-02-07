@@ -308,7 +308,7 @@ const Guests = () => {
             </Card>
 
             {/* Guest Details Modal */}
-            <Modal show={showDetailsModal} onHide={handleCloseDetails} centered size="lg" contentClassName="border-0 shadow-lg">
+            <Modal show={showDetailsModal} onHide={handleCloseDetails} centered size="lg" className="glass-modal" contentClassName="border-0 shadow-lg">
                 <Modal.Header closeButton className="border-bottom border-light">
                     <Modal.Title>Guest Details</Modal.Title>
                 </Modal.Header>
@@ -407,7 +407,7 @@ const Guests = () => {
             </Modal>
 
             {/* Paper / Staff Log Modal */}
-            <Modal show={showPaperModal} onHide={handleClosePaper} centered contentClassName="border-0 shadow-lg">
+            <Modal show={showPaperModal} onHide={handleClosePaper} centered className="glass-modal" contentClassName="border-0 shadow-lg">
                 <Modal.Header closeButton className="border-bottom border-light">
                     <Modal.Title>Staff Log</Modal.Title>
                 </Modal.Header>
@@ -439,7 +439,7 @@ const Guests = () => {
             </Modal>
 
             {/* Add/Edit Modal */}
-            <Modal show={showModal} onHide={handleClose} centered dialogClassName="glass-modal" size="lg">
+            <Modal show={showModal} onHide={handleClose} centered className="glass-modal" size="lg">
                 <Modal.Header closeButton className="border-bottom border-light">
                     <Modal.Title className="fw-bold font-luxury text-gradient">{editingId ? 'Edit Guest' : 'New Guest Booking'}</Modal.Title>
                 </Modal.Header>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Nav, Form, Button, Toast, ToastContainer } from 'react-bootstrap';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { FiHome, FiUsers, FiPieChart, FiSettings, FiLogOut, FiPlus, FiBell, FiLogIn, FiSun, FiMoon } from 'react-icons/fi';
+import { FiHome, FiUsers, FiPieChart, FiSettings, FiLogOut, FiPlus, FiBell, FiLogIn, FiSun, FiMoon, FiMenu, FiX } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import logoDark from '../assets/logo-dark.png';
@@ -16,8 +16,8 @@ const Layout = () => {
     const [toast, setToast] = useState({ show: false, message: '', variant: 'success' });
     const [reminderToast, setReminderToast] = useState({ show: false, count: 0 });
 
-    // Theme state
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
@@ -45,6 +45,8 @@ const Layout = () => {
         setTheme(prev => prev === 'light' ? 'dark' : 'light');
     };
 
+    const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
+
     const navItems = [
         { path: '/', label: 'Overview', icon: <FiHome size={18} /> },
         { path: '/guests', label: 'All Guests', icon: <FiUsers size={18} /> },
@@ -53,15 +55,32 @@ const Layout = () => {
 
     if (auth && auth.user && auth.user.role === 'admin') {
         navItems.push({ path: '/manage', label: 'Manage Options', icon: <FiSettings size={18} /> });
-        navItems.push({ path: '/reports', label: 'Reports', icon: <FiPieChart size={18} /> });
     }
 
     return (
-        <div className="d-flex" style={{ minHeight: '100vh', overflow: 'hidden' }}>
+        <div className="d-flex flex-column flex-md-row" style={{ minHeight: '100vh', overflow: 'hidden' }}>
+            {/* Mobile Header */}
+            <div className="d-md-none d-flex justify-content-between align-items-center p-3 border-bottom border-secondary border-opacity-25" style={{ background: 'var(--bg-sidebar)' }}>
+                <div className="d-flex align-items-center gap-2">
+                    <img src={theme === 'light' ? logoDark : logoLight} alt="Logo" style={{ height: '32px' }} />
+                    <span className="fw-bold text-gradient">ISLATEL</span>
+                </div>
+                <Button variant="link" onClick={toggleSidebar} className="text-secondary p-0">
+                    <FiMenu size={24} />
+                </Button>
+            </div>
+
             {/* Sidebar */}
             <div
-                className="d-flex flex-column flex-shrink-0 p-4 sidebar-dark m-3"
-                style={{ width: '280px', height: 'calc(100vh - 32px)', position: 'sticky', top: '16px', zIndex: 1000 }}
+                className={`d-flex flex-column flex-shrink-0 p-4 sidebar-dark m-3 ${isSidebarOpen ? 'd-flex fixed-top h-100 w-100 m-0 rounded-0' : 'd-none d-md-flex'}`}
+                style={{
+                    width: isSidebarOpen ? '100%' : '280px',
+                    height: isSidebarOpen ? '100vh' : 'calc(100vh - 32px)',
+                    position: isSidebarOpen ? 'fixed' : 'sticky',
+                    top: isSidebarOpen ? '0' : '16px',
+                    zIndex: 1050,
+                    transition: 'all 0.3s ease'
+                }}
             >
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <a href="/" className="text-decoration-none d-flex align-items-center gap-2">
@@ -72,14 +91,21 @@ const Layout = () => {
                         />
                         <span className="fs-4 fw-bold text-gradient">ISLATEL CRM</span>
                     </a>
-                    <Button
-                        variant="link"
-                        onClick={toggleTheme}
-                        className="p-0 text-secondary"
-                        title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
-                    >
-                        {theme === 'light' ? <FiMoon size={20} /> : <FiSun size={20} />}
-                    </Button>
+                    <div className="d-flex gap-2">
+                        <Button
+                            variant="link"
+                            onClick={toggleTheme}
+                            className="p-0 text-secondary"
+                            title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+                        >
+                            {theme === 'light' ? <FiMoon size={20} /> : <FiSun size={20} />}
+                        </Button>
+                        {isSidebarOpen && (
+                            <Button variant="link" onClick={toggleSidebar} className="d-md-none p-0 text-secondary">
+                                <FiX size={24} />
+                            </Button>
+                        )}
+                    </div>
                 </div>
 
                 <hr className="border-secondary opacity-25" />
@@ -89,6 +115,7 @@ const Layout = () => {
                             as={Link}
                             to={item.path}
                             key={item.path}
+                            onClick={() => setIsSidebarOpen(false)}
                             className={`d-flex align-items-center gap-3 px-3 py-2 ${location.pathname === item.path ? 'active' : ''}`}
                         >
                             {item.icon}
