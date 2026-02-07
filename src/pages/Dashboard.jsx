@@ -158,9 +158,12 @@ const Dashboard = () => {
             const d = new Date(g.bookedAt || g.sentRateAt || g.createdAt);
             return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
         }).forEach(g => {
-            if (!staffStats[g.staff]) staffStats[g.staff] = { revenue: 0, booked: 0, leads: 0 };
-            if (g.status === 'Booked') staffStats[g.staff].booked++;
-            staffStats[g.staff].revenue += Number(g.bookedValue || 0);
+            // Use creditedData for revenue/bookings, fallback to original staff
+            const closer = g.creditedStaff || g.staff;
+
+            if (!staffStats[closer]) staffStats[closer] = { revenue: 0, booked: 0, leads: 0 };
+            if (g.status === 'Booked') staffStats[closer].booked++;
+            staffStats[closer].revenue += Number(g.bookedValue || 0);
         });
 
         let topPerformer = { name: 'N/A', revenue: 0, booked: 0, rate: 0 };

@@ -31,6 +31,7 @@ const Guests = () => {
         staff: '',
         status: '',
         bookedValue: '',
+        creditedStaff: '',
         notes: ''
     };
     const [formData, setFormData] = useState(initialFormState);
@@ -578,17 +579,33 @@ const Guests = () => {
                                     </Col>
                                     {formData.status === 'Booked' && (
                                         <Col md={12} className="animate-fade-in">
-                                            <Form.Group className="p-3 rounded border border-warning bg-warning bg-opacity-10">
-                                                <Form.Label className="text-warning fw-bold mb-1">Total Booked Value (₱)</Form.Label>
-                                                <Form.Control
-                                                    type="number"
-                                                    name="bookedValue"
-                                                    value={formData.bookedValue}
-                                                    onChange={handleChange}
-                                                    className="filter-control w-100 border-warning fw-bold"
-                                                    placeholder="0.00"
-                                                />
-                                            </Form.Group>
+                                            <div className="p-3 rounded border border-warning bg-warning bg-opacity-10">
+                                                <Row className="g-3">
+                                                    <Col md={6}>
+                                                        <Form.Label className="text-warning fw-bold mb-1">Total Booked Value (₱)</Form.Label>
+                                                        <Form.Control
+                                                            type="number"
+                                                            name="bookedValue"
+                                                            value={formData.bookedValue}
+                                                            onChange={handleChange}
+                                                            className="filter-control w-100 border-warning fw-bold"
+                                                            placeholder="0.00"
+                                                        />
+                                                    </Col>
+                                                    <Col md={6}>
+                                                        <Form.Label className="text-warning fw-bold mb-1">Credited Staff</Form.Label>
+                                                        <Form.Select
+                                                            name="creditedStaff"
+                                                            value={formData.creditedStaff || formData.staff}
+                                                            onChange={handleChange}
+                                                            className="filter-control w-100 border-warning fw-bold"
+                                                        >
+                                                            <option value="">Select Staff...</option>
+                                                            {staffMembers.map(s => <option key={s} value={s}>{s}</option>)}
+                                                        </Form.Select>
+                                                    </Col>
+                                                </Row>
+                                            </div>
                                         </Col>
                                     )}
                                     <Col md={12}>
