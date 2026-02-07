@@ -17,6 +17,7 @@ const Guests = () => {
     const [selectedChannel, setSelectedChannel] = useState('');
     const [selectedStaff, setSelectedStaff] = useState('');
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+    const [dateError, setDateError] = useState(false);
 
     // Form State
     const initialFormState = {
@@ -44,10 +45,14 @@ const Guests = () => {
             setEditingId(null);
             setFormData(initialFormState);
         }
+        setDateError(false);
         setShowModal(true);
     };
 
-    const handleClose = () => setShowModal(false);
+    const handleClose = () => {
+        setShowModal(false);
+        setDateError(false);
+    };
 
     const handleShowDetails = (guest) => {
         setSelectedGuest(guest);
@@ -72,10 +77,26 @@ const Guests = () => {
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
+        if (name === 'checkIn' || name === 'checkOut') {
+            setDateError(false);
+        }
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Date Validation
+        if (formData.checkIn && formData.checkOut) {
+            const start = new Date(formData.checkIn);
+            const end = new Date(formData.checkOut);
+
+            if (start > end) {
+                setToast({ show: true, message: 'Check-out date cannot be earlier than Check-in date!', type: 'warning' });
+                setDateError(true);
+                return;
+            }
+        }
+
         if (editingId) {
             updateGuest({ ...formData, id: editingId });
             setToast({ show: true, message: 'Guest updated successfully!', type: 'success' });
@@ -521,7 +542,7 @@ const Guests = () => {
                                             name="checkIn"
                                             value={formData.checkIn}
                                             onChange={handleChange}
-                                            className="filter-control w-100"
+                                            className={`filter-control w-100 ${dateError ? 'border-danger' : ''}`}
                                         />
                                     </Col>
                                     <Col md={6}>
@@ -532,7 +553,7 @@ const Guests = () => {
                                             name="checkOut"
                                             value={formData.checkOut}
                                             onChange={handleChange}
-                                            className="filter-control w-100"
+                                            className={`filter-control w-100 ${dateError ? 'border-danger' : ''}`}
                                         />
                                     </Col>
                                     <Col md={6}>
